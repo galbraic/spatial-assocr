@@ -1,4 +1,4 @@
-data/
+data/*
 !data/distances_month0a_month1b.pkl
 .DS_Store
 .ipynb_checkpoints/
