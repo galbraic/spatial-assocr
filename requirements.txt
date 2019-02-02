@@ -1,0 +1,5 @@
+scipy
+numpy
+plotly
+flake8
+pre-commit
