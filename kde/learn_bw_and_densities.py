@@ -2,13 +2,13 @@
 This code finds the optimal value of k (the # of nearest neighbors) for the adaptive bandwidth KDE.
 """
 
-from location_projects import kde_2d
+from location_project import kde_2d
 import numpy as np
 import csv
 
-# conversions for Dublin
-KM_TO_LON = 0.015047 # = (degree longitude)/km
-KM_TO_LAT = 0.008983 # = (degree latitude)/km
+# conversitions for SoCal
+KM_TO_LON = 0.010615  # = (degree longitude)/km
+KM_TO_LAT = 0.008989  # = (degree latitude)/km
 
 # load the data
 path = "./data/"
