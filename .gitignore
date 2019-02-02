@@ -3,3 +3,4 @@ data/*
 !data/parcel_ass-oc-ass_events_no_filter.csv
 .DS_Store
 .ipynb_checkpoints/
+.vscode/
