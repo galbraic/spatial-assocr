@@ -1,14 +1,15 @@
 """
 Author: Moshe Lichman
 """
-from __future__ import division
+# from __future__ import division
 import numpy as np
 from scipy import misc
 from scipy.spatial import KDTree
+
 MIN_PARENT = 5
 TOL = 0.0001
 
-# Might need adjusting for different areas - this one is for Southern California
+# Might need adjusting for different areas - this one is for SoCal
 KM_TO_LON = 0.010615
 KM_TO_LAT = 0.008989
 
@@ -19,18 +20,26 @@ def _log_kernel_for_ball_data(query_point, ball_data):
 
     x_dist = query_point[0] - ball_data[:, 1]
     y_dist = query_point[1] - ball_data[:, 2]
-    log_pdf_x = -.5 * np.log(2 * np.pi) - np.log(ball_data[:, 3] * KM_TO_LON) - \
-                 .5 * (x_dist * x_dist) / (ball_data[:,3] * KM_TO_LON * ball_data[:,3] * KM_TO_LON)
+    log_pdf_x = (
+        -0.5 * np.log(2 * np.pi)
+        - np.log(ball_data[:, 3] * KM_TO_LON)
+        - 0.5 * (x_dist * x_dist) / (ball_data[:, 3] * KM_TO_LON * ball_data[:, 3] * KM_TO_LON)
+    )
 
-    log_pdf_y = -.5 * np.log(2 * np.pi) - np.log(ball_data[:,3] * KM_TO_LAT) - \
-                 .5 * (y_dist * y_dist) / (ball_data[:,3] * KM_TO_LAT * ball_data[:,3] * KM_TO_LAT)
+    log_pdf_y = (
+        -0.5 * np.log(2 * np.pi)
+        - np.log(ball_data[:, 3] * KM_TO_LAT)
+        - 0.5 * (y_dist * y_dist) / (ball_data[:, 3] * KM_TO_LAT * ball_data[:, 3] * KM_TO_LAT)
+    )
 
     log_vals = np.log(ball_data[:, 4]) + log_pdf_x + log_pdf_y
 
     return misc.logsumexp(log_vals)
 
 
-def _log_kernel_for_single_sample_event(query_point, sample_point, exp_bandwidth, factor_bandwidth, weight):
+def _log_kernel_for_single_sample_event(
+    query_point, sample_point, exp_bandwidth, factor_bandwidth, weight
+):
     """
      INPUT:
     -------
@@ -47,11 +56,17 @@ def _log_kernel_for_single_sample_event(query_point, sample_point, exp_bandwidth
 
     x_dist = query_point[0] - sample_point[0]
     y_dist = query_point[1] - sample_point[1]
-    log_pdf_x = -.5 * np.log(2 * np.pi) - np.log(factor_bandwidth * KM_TO_LON) - \
-                 .5 * (x_dist * x_dist) / (exp_bandwidth * KM_TO_LON * exp_bandwidth * KM_TO_LON)
+    log_pdf_x = (
+        -0.5 * np.log(2 * np.pi)
+        - np.log(factor_bandwidth * KM_TO_LON)
+        - 0.5 * (x_dist * x_dist) / (exp_bandwidth * KM_TO_LON * exp_bandwidth * KM_TO_LON)
+    )
 
-    log_pdf_y = -.5 * np.log(2 * np.pi) - np.log(factor_bandwidth * KM_TO_LAT) - \
-                 .5 * (y_dist * y_dist) / (exp_bandwidth * KM_TO_LAT * exp_bandwidth * KM_TO_LAT)
+    log_pdf_y = (
+        -0.5 * np.log(2 * np.pi)
+        - np.log(factor_bandwidth * KM_TO_LAT)
+        - 0.5 * (y_dist * y_dist) / (exp_bandwidth * KM_TO_LAT * exp_bandwidth * KM_TO_LAT)
+    )
 
     return np.log(weight) + log_pdf_x + log_pdf_y
 
@@ -76,16 +91,16 @@ def _learn_nearest_neighbors_bandwidth(sample_points, k, lon_to_km, lat_to_km):
     tree = KDTree(dists, leafsize=500)
 
     for i in range(dists.shape[0]):
-        (neighbors_dists, neighbors_indexes) = tree.query(dists[i,:], k+1)
+        (neighbors_dists, neighbors_indexes) = tree.query(dists[i, :], k + 1)
 
         if neighbors_dists[-1] <= 0.001:
-             bandwidths.append( 0.001 ) # bandwidth can't be less than 1 meter
+            bandwidths.append(0.001)  # bandwidth can't be less than 1 meter
         else:
             bandwidths.append(neighbors_dists[-1])
 
         # bandwidths.append(neighbors_dists[-1])
 
-    #print 'Done training bandwidths'
+    # print('Done training bandwidths')
     return np.array(bandwidths)
 
 
@@ -96,7 +111,7 @@ def _build_adaptive_bandwidth_kde(sample_points, nn=20, lon_to_km=KM_TO_LON, lat
      INPUT:
     -------
         1. sample_points: The observed data
-        2. nn:            (default=20) Number of neighbors to look at when computing the adaptive bandwidth.
+        2. nn:            (default=20) Number of neighbors to look at when computing the adaptive bandwidth
         3. lon_to_km:     (default=0.010615) What value of longitude is equivalent to 1 km in this region
         4. lat_to_km      (default=0.008989) What value of latitude is equivalent to 1 km in this region
 
@@ -104,20 +119,20 @@ def _build_adaptive_bandwidth_kde(sample_points, nn=20, lon_to_km=KM_TO_LON, lat
     --------
         1. kde: KDE object with adaptive bandwidth method
     """
-    print 'Computing the bw'
+    print("Computing the bw")
     bw = _learn_nearest_neighbors_bandwidth(sample_points[:, 1:3], nn, lon_to_km, lat_to_km)
 
-    print 'Done computing bw, creating the kd-tree'
+    print("Done computing bw, creating the kd-tree")
     # Combining the sample points with the learned badnwidths
-    data = np.hstack((sample_points,
-                      np.array([bw]).T,
-                      np.ones([sample_points.shape[0], 1])))
+    data = np.hstack((sample_points, np.array([bw]).T, np.ones([sample_points.shape[0], 1])))
 
     return KDE(data)
 
 
 class MixtureKdeIndividualAndPopulation(object):
-    def __init__(self, sample_points, user_id, alpha=0.85, nn=20, lon_to_km=KM_TO_LON, lat_to_km=KM_TO_LAT):
+    def __init__(
+        self, sample_points, user_id, alpha=0.85, nn=20, lon_to_km=KM_TO_LON, lat_to_km=KM_TO_LAT
+    ):
         """
         Creates a mixture of KDE model. This version only has two components - the individual model and the population
         model.
@@ -220,13 +235,13 @@ class KDE(object):
 
 
 class BallTree(object):
-
     def __init__(self, data):
         self.num_points = data.shape[0]
         try:
             self.head_ball = BallTree.split_ball(data, 0)
         except Exception as e:
-            print 'Creating ball tree with min parent %s' % MIN_PARENT
+            print("Creating ball tree with min parent %s".format(MIN_PARENT))
+            print(e)
 
     def log_pdf(self, query_event):
         """
@@ -268,9 +283,10 @@ class BallTree(object):
             return np.log(ball.num_points) + np.logaddexp(max_log_pdf, min_log_pdf) - np.log(2)
 
         # Need to recurse
-        return np.logaddexp(self.log_pdf_recurse(ball.left_ball, query_event),
-                            self.log_pdf_recurse(ball.right_ball, query_event))
-
+        return np.logaddexp(
+            self.log_pdf_recurse(ball.left_ball, query_event),
+            self.log_pdf_recurse(ball.right_ball, query_event),
+        )
 
     @staticmethod
     def split_ball(data, feature):
@@ -281,23 +297,33 @@ class BallTree(object):
 
         lower_left = np.amin(data[:, 1:3], axis=0)
         upper_right = np.amax(data[:, 1:3], axis=0)
-        max_bandwidth = np.amax(data[:,3], axis=0)
-        min_bandwidth = np.amin(data[:,3], axis=0)
+        max_bandwidth = np.amax(data[:, 3], axis=0)
+        min_bandwidth = np.amin(data[:, 3], axis=0)
         max_weight = np.amax(data[:, 4], axis=0)
         min_weight = np.amin(data[:, 4], axis=0)
 
         # Finding the left and right ball. The median goes to the right ball
-        arg_sort = np.argsort(data[:, feature + 1])  # The '+1' is because the 0's column in the data is the user_id
-        med_ind = np.ceil(len(arg_sort) / 2)
+        arg_sort = np.argsort(
+            data[:, feature + 1]
+        )  # The '+1' is because the 0's column in the data is the user_id
+        med_ind = int(np.ceil(len(arg_sort) / 2))
         left_ball_data = data[arg_sort[:med_ind], :]
         right_ball_data = data[arg_sort[med_ind:], :]
 
         left_ball = BallTree.split_ball(left_ball_data, (feature + 1) % 2)
         right_ball = BallTree.split_ball(right_ball_data, (feature + 1) % 2)
 
-        return Ball(lower_left=lower_left, upper_right=upper_right, left_ball=left_ball, right_ball=right_ball,
-                    min_bw= min_bandwidth, max_bw=max_bandwidth, min_weight=min_weight, max_weight=max_weight,
-                    num_points=data.shape[0])
+        return Ball(
+            lower_left=lower_left,
+            upper_right=upper_right,
+            left_ball=left_ball,
+            right_ball=right_ball,
+            min_bw=min_bandwidth,
+            max_bw=max_bandwidth,
+            min_weight=min_weight,
+            max_weight=max_weight,
+            num_points=data.shape[0],
+        )
 
 
 class Ball(object):
@@ -308,6 +334,7 @@ class Ball(object):
         1. Contains all the events in the area, in the case where the number of events is lower than the threshold
         2. Save just the mid event and some sufficient statistics that allows us to compute the pdf estimation
     """
+
     def __init__(self, **kwargs):
         """
         The constructor for the first case. Saving all the points
@@ -318,18 +345,18 @@ class Ball(object):
         """
         self.ball_data = None
         if len(kwargs) == 1:
-            self.ball_data = kwargs['ball_data']
+            self.ball_data = kwargs["ball_data"]
             self.num_points = len(self.ball_data)
         else:
-            self.num_points = kwargs['num_points']
-            self.lower_left = kwargs['lower_left']
-            self.upper_right = kwargs['upper_right']
-            self.left_ball = kwargs['left_ball']
-            self.right_ball = kwargs['right_ball']
-            self.min_bw = kwargs['min_bw']
-            self.max_bw = kwargs['max_bw']
-            self.min_weight = kwargs['min_weight']
-            self.max_weight = kwargs['max_weight']
+            self.num_points = kwargs["num_points"]
+            self.lower_left = kwargs["lower_left"]
+            self.upper_right = kwargs["upper_right"]
+            self.left_ball = kwargs["left_ball"]
+            self.right_ball = kwargs["right_ball"]
+            self.min_bw = kwargs["min_bw"]
+            self.max_bw = kwargs["max_bw"]
+            self.min_weight = kwargs["min_weight"]
+            self.max_weight = kwargs["max_weight"]
 
     def min_log_pdf(self, query_point):
         """
@@ -343,8 +370,9 @@ class Ball(object):
         --------
             1. log_pdf: The log probability
         """
-        return _log_kernel_for_single_sample_event(query_point, self.farthest_point(query_point),
-                                                  self.min_bw, self.max_bw, self.max_weight)
+        return _log_kernel_for_single_sample_event(
+            query_point, self.farthest_point(query_point), self.min_bw, self.max_bw, self.max_weight
+        )
 
     def max_log_pdf(self, query_point):
         """
@@ -358,8 +386,9 @@ class Ball(object):
         --------
             1. log_pdf: The log probability
         """
-        return _log_kernel_for_single_sample_event(query_point, self.closest_point(query_point),
-                                                  self.max_bw, self.min_bw, self.min_weight)
+        return _log_kernel_for_single_sample_event(
+            query_point, self.closest_point(query_point), self.max_bw, self.min_bw, self.min_weight
+        )
 
     def farthest_point(self, query_point):
         """
@@ -413,7 +442,7 @@ class Ball(object):
             if query_point[1] >= self.lower_left[1]:
                 return [self.upper_right[0], query_point[1]]
 
-            return [self.upper_right[0],self.lower_left[1]]
+            return [self.upper_right[0], self.lower_left[1]]
 
         if query_point[0] > self.lower_left[0]:
             # between the two vertical edges (could be in the area)
@@ -437,10 +466,10 @@ class Ball(object):
         return self.lower_left
 
 
-if __name__ == '__main__':
-    dublin = np.genfromtxt("../data/dublin_filter_nobots.csv", delimiter=',')
+if __name__ == "__main__":
+    dublin = np.genfromtxt("../data/dublin_filter_nobots.csv", delimiter=",")
     data = dublin[0:20, :3]
-    data_kde = _build_adaptive_bandwidth_kde(data[:,0:3])
-    tmp = data_kde.log_pdf(data[1,1:3])
+    data_kde = _build_adaptive_bandwidth_kde(data[:, 0:3])
+    tmp = data_kde.log_pdf(data[1, 1:3])
 
-    tmp = data_kde.log_pdf(data[-1,1:3])
+    tmp = data_kde.log_pdf(data[-1, 1:3])
