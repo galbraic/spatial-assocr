@@ -13,11 +13,8 @@ TOL = 0.0001
 KM_TO_LON = 0.010615
 KM_TO_LAT = 0.008989
 
-##############################################################################
-############################### STATIC METHODS ###############################
-##############################################################################
-def _log_kernel_for_ball_data(query_point, ball_data):
 
+def _log_kernel_for_ball_data(query_point, ball_data):
     x_dist = query_point[0] - ball_data[:, 1]
     y_dist = query_point[1] - ball_data[:, 2]
     log_pdf_x = (
@@ -111,9 +108,12 @@ def _build_adaptive_bandwidth_kde(sample_points, nn=20, lon_to_km=KM_TO_LON, lat
      INPUT:
     -------
         1. sample_points: The observed data
-        2. nn:            (default=20) Number of neighbors to look at when computing the adaptive bandwidth
-        3. lon_to_km:     (default=0.010615) What value of longitude is equivalent to 1 km in this region
-        4. lat_to_km      (default=0.008989) What value of latitude is equivalent to 1 km in this region
+        2. nn:            (default=20) Number of neighbors to look at when
+                            computing the adaptive bandwidth
+        3. lon_to_km:     (default=0.010615) What value of longitude is
+                            equivalent to 1 km in this region
+        4. lat_to_km      (default=0.008989) What value of latitude is
+                            equivalent to 1 km in this region
 
      OUTPUT:
     --------
@@ -141,8 +141,10 @@ class MixtureKdeIndividualAndPopulation(object):
         -------
             1. sample_points:   All observation points <np.array [[user_id, lon, lat], ... ]
             2. user_id:         The user to create the mixture model for
-            3. alpha:           (default=0.85) The mixing weight for the individual. The population will get 1-alpha
-            4. nn:              (default=20) The number of nearest neighbors to compute the adaptive bandwidth
+            3. alpha:           (default=0.85) The mixing weight for the individual. The
+                                    population will get 1-alpha
+            4. nn:              (default=20) The number of nearest neighbors to compute the
+                                    adaptive bandwidth
             5. lon_to_km:       What value of longitude is equivalent to 1 km in this region
             6. lat_to_km        What value of latitude is equivalent to 1 km in this region
         """
@@ -181,7 +183,8 @@ class KDE(object):
          INPUT:
         -------
             1. data: The observed/train events.
-                     The data is in the format of np.array([[user_id, lon, lat, bandwidth, weigh], ... ])
+                     The data is in the format of
+                     np.array([[user_id, lon, lat, bandwidth, weigh], ... ])
                      where each line is a different point.
         """
         # There is no normalization at the end and the algorithm assumes the weights
