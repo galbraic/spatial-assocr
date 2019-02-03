@@ -134,8 +134,8 @@ class MixtureKdeIndividualAndPopulation(object):
         self, sample_points, user_id, alpha=0.85, nn=20, lon_to_km=KM_TO_LON, lat_to_km=KM_TO_LAT
     ):
         """
-        Creates a mixture of KDE model. This version only has two components - the individual model and the population
-        model.
+        Creates a mixture of KDE model. This version only has two components:
+        the individual model and the population model.
 
          INPUT:
         -------
@@ -185,14 +185,15 @@ class KDE(object):
                      where each line is a different point.
         """
         # There is no normalization at the end and the algorithm assumes the weights
-        # in the train data are sum to 1. The regular notation assumes the weights sums to N and that's why it is
-        # written as 1/N * sum ...
+        # in the train data are sum to 1. The regular notation assumes the weights sum
+        # to N and that's why it is written as 1/N * sum ...
         data[:, -1] /= np.sum(data[:, -1])
         self.ball_tree = BallTree(data)
 
     def log_pdf(self, query_point):
         """
-        Computed the estimated log pdf of a query point using a k-d tree approach for fast kde computation.
+        Computed the estimated log pdf of a query point using a k-d tree
+        approach for fast kde computation.
 
          INPUT:
         -------
@@ -207,19 +208,24 @@ class KDE(object):
     @staticmethod
     def sample_from_kde(data):
         """
-        Sampling a point from data. This is done separately from the actual object because in the sampling I will
-        usually change the weights all the time (because that's how the sampling is done) and I don't want to
-        split the ball tree every time (it's expensive). Sampling from KDE is done in the following way:
+        Sampling a point from data. This is done separately from the actual
+        object because in the sampling I will usually change the weights all the
+        time (because that's how the sampling is done) and I don't want to split
+        the ball tree every time (it's expensive). Sampling from KDE is done in
+        the following way:
 
             1. We sample a point from data according to the weights.
-            2. We sample a point from MVN with the mean as the sampled point from (1) and the bw of the point from (1)
+            2. We sample a point from MVN with the mean as the sampled point from
+                (1) and the bw of the point from (1)
 
 
          INPUT:
         -------
             1. data: The observed/train events.
-                     The data is in the format of np.array([[user_id, lon, lat, bandwidth, weigh], ... ])
-                     where each line is a different point. We assume the weight sum to 1!!!!
+                    The data is in the format of
+                    np.array([[user_id, lon, lat, bandwidth, weigh], ... ])
+                    where each line is a different point.
+                    NOTE: We assume the weights sum to 1!!!!
 
          OUTPUT:
         --------
@@ -331,8 +337,10 @@ class Ball(object):
     The Ball class represent an area on the map that contains points.
     It is used in the kd - tree like search for the pdf.
     It can have two forms:
-        1. Contains all the events in the area, in the case where the number of events is lower than the threshold
-        2. Save just the mid event and some sufficient statistics that allows us to compute the pdf estimation
+        1. Contains all the events in the area, in the case where the number
+            of events is lower than the threshold
+        2. Save just the mid event and some sufficient statistics that allows
+            us to compute the pdf estimation
     """
 
     def __init__(self, **kwargs):
