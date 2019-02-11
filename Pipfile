@@ -4,6 +4,8 @@ verify_ssl = true
 
 [packages]
 pandas = "*"
+ipykernel = "*"
+matplotlib = "*"
 plotly = "*"
 numpy = "*"
 scipy = "*"

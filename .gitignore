@@ -5,6 +5,7 @@ Pipfile.lock
 spatial_assocr.egg-info/
 .DS_Store
 .python-version
-.ipynb_checkpoints/
 .vscode/
 .venv/
+.ipynb_checkpoints/
+*.pyc
