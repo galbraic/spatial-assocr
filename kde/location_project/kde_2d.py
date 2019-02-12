@@ -68,7 +68,7 @@ def _log_kernel_for_single_sample_event(
     return np.log(weight) + log_pdf_x + log_pdf_y
 
 
-def _learn_nearest_neighbors_bandwidth(sample_points, k, lon_to_km, lat_to_km):
+def _learn_nearest_neighbors_bandwidth(sample_points, k, lon_to_km, lat_to_km, min_bw=0.001):
     """
     Learning the bandwidth
     :param data:
@@ -90,8 +90,8 @@ def _learn_nearest_neighbors_bandwidth(sample_points, k, lon_to_km, lat_to_km):
     for i in range(dists.shape[0]):
         (neighbors_dists, neighbors_indexes) = tree.query(dists[i, :], k + 1)
 
-        if neighbors_dists[-1] <= 0.001:
-            bandwidths.append(0.001)  # bandwidth can't be less than 1 meter
+        if neighbors_dists[-1] <= min_bw:
+            bandwidths.append(min_bw)  # bandwidth can't be less than 1 meter
         else:
             bandwidths.append(neighbors_dists[-1])
 
@@ -101,7 +101,9 @@ def _learn_nearest_neighbors_bandwidth(sample_points, k, lon_to_km, lat_to_km):
     return np.array(bandwidths)
 
 
-def _build_adaptive_bandwidth_kde(sample_points, nn=20, lon_to_km=KM_TO_LON, lat_to_km=KM_TO_LAT):
+def _build_adaptive_bandwidth_kde(
+    sample_points, nn=20, lon_to_km=KM_TO_LON, lat_to_km=KM_TO_LAT, min_bw=0.001
+):
     """
     Creates a fast KDE (using k-d tree) model for the sample points.
 
@@ -120,7 +122,7 @@ def _build_adaptive_bandwidth_kde(sample_points, nn=20, lon_to_km=KM_TO_LON, lat
         1. kde: KDE object with adaptive bandwidth method
     """
     print("Computing the bw")
-    bw = _learn_nearest_neighbors_bandwidth(sample_points[:, 1:3], nn, lon_to_km, lat_to_km)
+    bw = _learn_nearest_neighbors_bandwidth(sample_points[:, 1:3], nn, lon_to_km, lat_to_km, min_bw)
 
     print("Done computing bw, creating the kd-tree")
     # Combining the sample points with the learned badnwidths
