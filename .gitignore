@@ -1,6 +1,7 @@
 data/*
 !data/distances_month0a_month1b.pkl
 !data/parcel_ass-oc-ass_events_no_filter.csv
+!data/mpp_month0a_month1b_n50.csv
 Pipfile.lock
 spatial_assocr.egg-info/
 .DS_Store

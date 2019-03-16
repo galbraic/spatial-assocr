@@ -1,7 +1,7 @@
 """
 Author: Moshe Lichman
 """
-from __future__ import division
+# from __future__ import division
 import numpy as np
 from scipy import misc
 from scipy.spatial import KDTree
