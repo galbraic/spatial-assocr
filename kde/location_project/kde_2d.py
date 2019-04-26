@@ -57,7 +57,7 @@ def learn_nearest_neighbors_bandwidth(
         else:
             bandwidths.append(neighbors_dists[-1])
 
-    print("Done training bandwidths")
+    # print("Done training bandwidths")
     return np.array(bandwidths)
 
 
