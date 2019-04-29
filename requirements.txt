@@ -1,0 +1,6 @@
+-i https://pypi.org/simple
+numpy
+scipy
+pandas
+plotly
+git+https://github.com/klicperajo/pyemd.git#egg=pyemd
