@@ -1,19 +1,19 @@
 import psycopg2
 import ConfigParser
 
-print 'DB_QUERIES: Loading database parameters'
+print("DB_QUERIES: Loading database parameters")
 
-## Loading the parameter
+# Loading the parameter
 config = ConfigParser.RawConfigParser()
-config.read('properties.conf')
+config.read("properties.conf")
 
-USER = config.get('data_base', 'user')
-HOST = config.get('data_base', 'host')
-PASS = config.get('data_base', 'password')
-DB_NAME = config.get('data_base', 'dbname')
+USER = config.get("data_base", "user")
+HOST = config.get("data_base", "host")
+PASS = config.get("data_base", "password")
+DB_NAME = config.get("data_base", "dbname")
 
 
-def get_all_raw_data_for_user(uid,loc):
+def get_all_raw_data_for_user(uid, loc):
     """
     Returns the raw data for a user and location combo. This prevents us from getting user data for users who travel
     between areas.
@@ -25,7 +25,10 @@ def get_all_raw_data_for_user(uid,loc):
     conn = psycopg2.connect("host=%s dbname=%s user=%s password=%s" % (HOST, DB_NAME, USER, PASS))
     cur = conn.cursor()
 
-    query = "SELECT tweet_id, timestamp, long, lat FROM twitter_data WHERE user_id = '%s' AND loc = '%s';" % (uid,loc)
+    query = (
+        "SELECT tweet_id, timestamp, long, lat FROM twitter_data WHERE user_id = '%s' AND loc = '%s';"
+        % (uid, loc)
+    )
     cur.execute(query)
 
     table = cur.fetchall()
@@ -81,8 +84,4 @@ def insert_to_table(table, columns, values):
     insert_query = "INSERT INTO %s %s VALUES %s;" % (table, columns, values)
     cur.execute(insert_query)
     conn.commit()
-
-    try:
-        conn.close()
-    except:
-        pass
+    conn.close()

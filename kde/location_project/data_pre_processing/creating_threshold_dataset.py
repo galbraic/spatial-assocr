@@ -5,7 +5,6 @@ from __future__ import division
 
 import numpy as np
 from location_project.utils import db_queries as db
-import pickle
 
 
 def finding_thresholded_users_from_dump_file(min_per_good_day, min_days, pickle_dump):
@@ -30,7 +29,7 @@ def finding_thresholded_users_from_dump_file(min_per_good_day, min_days, pickle_
             event:  (user_id, tweet_id, time_stamp, long, lat)
     """
     # So currently I was stupid enough to not save the uid's but it's still good for telling me how much users we have.
-    good_users = 0 # change this to dictionary once it is fixed
+    good_users = 0  # change this to dictionary once it is fixed
     for user_data in pickle_dump:
         if len(user_data) < min_days:
             # This means not enough days
@@ -46,7 +45,7 @@ def finding_thresholded_users_from_dump_file(min_per_good_day, min_days, pickle_
                 good_users += 1
                 break
 
-    print 'Number of good users with [%d %d] is: %d' % (min_per_good_day, min_days, good_users)
+    print("Number of good users with [%d %d] is: %d" % (min_per_good_day, min_days, good_users))
 
 
 def finding_thresholded_users_from_db(min_per_good_day, min_days, agg_time_in_minutes, loc):
@@ -79,15 +78,18 @@ def finding_thresholded_users_from_db(min_per_good_day, min_days, agg_time_in_mi
             event:  (user_id, tweet_id, time_stamp, long, lat)
     """
     uids = db.get_unique_user_ids_from_raw_data(loc)
-    print 'Got %d users from raw data' % len(uids)
+    print("Got %d users from raw data" % len(uids))
     good_users_data = {}
     ind = 0
     for uid in uids:
         ind += 1
         if ind % 1000 == 0:
-            print '%d users left - So far found %d good users' % (len(uids) - ind, len(good_users_data))
+            print(
+                "%d users left - So far found %d good users"
+                % (len(uids) - ind, len(good_users_data))
+            )
 
-        user_raw_data = db.get_all_raw_data_for_user(uid,loc)
+        user_raw_data = db.get_all_raw_data_for_user(uid, loc)
 
         # First collecting the aggregated data
         user_aggregated_data = {}
@@ -119,13 +121,15 @@ def finding_thresholded_users_from_db(min_per_good_day, min_days, agg_time_in_mi
         if good_days_count >= min_days:
             good_users_data[uid] = user_aggregated_data
 
-    print 'Found %d good users' % len(good_users_data)
+    print("Found %d good users" % len(good_users_data))
     return good_users_data
+
 
 # if __name__ == '__main__':
 #     ok_users = finding_thresholded_users_from_db(5, 10, 20)
 #     pickle.dump(ok_users, open('/scratch/mlichman/location_data/users_5_10_20', 'w'))
-#     print 'Done'
+#     print('Done')
+
 
 def dict_to_list(dict):
     """
@@ -144,10 +148,11 @@ def dict_to_list(dict):
         for day_key in dict[uid]:
             for agg_window_key in dict[uid][day_key]:
                 for event in dict[uid][day_key][agg_window_key]:
-                    tmp = [uid,event[-2],event[-1]]
+                    tmp = [uid, event[-2], event[-1]]
                     good_users_list.append(tmp)
 
     return good_users_list
+
 
 def find_bots(data):
     """
@@ -162,11 +167,11 @@ def find_bots(data):
         1. bots: list of user_id that need to be investigated for being bots
     """
     bots = []
-    uid = np.unique(data[:,0])
+    uid = np.unique(data[:, 0])
     for i in range(uid.shape[0]):
-        ind = np.where(data[:,0] == uid[i])
-        bw = data[ind[0],3]
-        if (len(bw) >= 10 and sum(bw) == 0.0):
+        ind = np.where(data[:, 0] == uid[i])
+        bw = data[ind[0], 3]
+        if len(bw) >= 10 and sum(bw) == 0.0:
             bots.append(uid[i])
 
     return np.array(bots)

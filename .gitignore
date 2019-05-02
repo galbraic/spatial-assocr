@@ -10,3 +10,5 @@ spatial_assocr.egg-info/
 .venv/
 .ipynb_checkpoints/
 *.pyc
+build
+src
