@@ -3,5 +3,5 @@ from setuptools import setup, find_packages
 setup(
     name="spatial-assocr",
     packages=find_packages(),
-    install_requires=["numpy", "scipy", "pandas", "plotly"],
+    install_requires=["numpy", "scipy", "pandas", "plotly", "geopy"],
 )

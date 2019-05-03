@@ -1,10 +1,33 @@
 import numpy as np
 import pandas as pd
 from scipy.ndimage import gaussian_filter
+from scipy._lib.six import xrange
 from plotly.offline import iplot
 import plotly.graph_objs as go
+from geopy.distance import geodesic
 
 from .kde_2d import kdnearest, learn_nearest_neighbors_bandwidth, sample_from_kde
+from emd import emd
+
+
+def geodesic_dist(x, y):
+    """
+    compute great circle distance matrix between X and Y
+    x: m_x x n
+    y: m_y x n
+    return D: m_x x m_y
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+    m_x = x.shape[0]
+    m_y = y.shape[0]
+    D = np.empty((m_x, m_y), dtype=np.double)
+
+    for i in xrange(0, m_x):
+        for j in xrange(0, m_y):
+            D[i, j] = geodesic(x[i], y[j]).km
+
+    return D
 
 
 def get_individual_component(df, users, criteria=None, prnt=True):
@@ -23,6 +46,9 @@ def get_individual_component(df, users, criteria=None, prnt=True):
         shared_locs = np.intersect1d(loc_set, tmp["location_id"].unique())
         if len(shared_locs) > 0:
             matches.append({"uid": u, "n_matches": len(shared_locs), "n_events": len(tmp)})
+    if matches is None:
+        print("No other visits overlap with this pattern, using population only.")
+        return None, None
     matches = pd.DataFrame(matches)
 
     # compute the weight for each matching user's points
@@ -66,6 +92,9 @@ def sample_from_mixture_kde(pop, indiv, n, users, alpha=0.2):
     pop_w = np.ones(n_pts) / n_pts
     pop_kde = np.hstack([tmp_pop, np.atleast_2d(pop_w).T])
 
+    if indiv is None:  # sample only from pop
+        return sample_from_kde(pop_kde, n=n)
+
     n_pop = np.random.binomial(n, alpha)
 
     sample_pop = sample_from_kde(pop_kde, n=n_pop)
@@ -85,7 +114,6 @@ def calc_cmp(mpp, pop_kde_data, userA, userB=None, n_sim=10, k=1, prnt=False):
     indiv_data, indiv_kde_data = get_individual_component(
         df=mpp, users={userA, userB}, criteria=criteria_A | criteria_B, prnt=prnt
     )
-    indiv_data.head()
 
     # SET MPP OF INTEREST & ITS SUBPROCESSES
     a_star = mpp.loc[criteria_A]  # fix events in A^*
@@ -99,17 +127,20 @@ def calc_cmp(mpp, pop_kde_data, userA, userB=None, n_sim=10, k=1, prnt=False):
     for ell in range(n_sim):
         sim[ell] = {}
         sim[ell]["locations"] = sample_from_mixture_kde(
-            pop=pop_kde_data,
-            indiv=indiv_kde_data,
-            n=len(b_star_unique),
-            # n=n_b_star,
-            users=[userA, userB],
+            pop=pop_kde_data, indiv=indiv_kde_data, n=len(b_star_unique), users=[userA, userB]
         )
         s = pd.DataFrame(sim[ell]["locations"], columns=["lon", "lat"])
         sim[ell]["dists"] = kdnearest(a=a_star_unique, b=s, k=k)
-        # sim[ell]['dists'] = kdnearest(a=a_star, b=s, k=k)
 
         scores[ell] = {}
+        scores[ell]["emd"] = emd(
+            X=a_star_unique,
+            Y=s[["lat", "lon"]],
+            X_weights=None,
+            Y_weights=None,
+            distance="precomputed",
+            D=geodesic_dist(a_star_unique[["lat", "lon"]], s[["lat", "lon"]]),
+        )
         scores[ell]["mean_dist"] = np.mean(sim[ell]["dists"])
         scores[ell]["med_dist"] = np.median(sim[ell]["dists"])
         # scores[ell]['loc_sim'] = calc_location_similarity(
@@ -130,16 +161,29 @@ def calc_cmp(mpp, pop_kde_data, userA, userB=None, n_sim=10, k=1, prnt=False):
 
     scores = pd.DataFrame.from_dict(scores, orient="index")
     obs_dist = kdnearest(a=a_star_unique, b=b_star_unique, k=k)
-    # obs_dist = kdnearest(a=a_star, b=b_star, k=k)
-    # obs_loc = calc_location_similarity(
-    #     pd.concat([a_star, b_star], ignore_index=True)
-    # )
+    # obs_loc = calc_location_similarity(pd.concat([a_star, b_star], ignore_index=True))
+    obs_emd = emd(
+        X=a_star_unique,
+        Y=b_star_unique,
+        X_weights=None,
+        Y_weights=None,
+        distance="precomputed",
+        D=geodesic_dist(a_star_unique[["lat", "lon"]], b_star_unique[["lat", "lon"]]),
+    )
 
+    cmp_emd = sum(scores.emd < obs_emd) / n_sim
     cmp_mean = sum(scores.mean_dist < np.mean(obs_dist)) / n_sim
     cmp_median = sum(scores.med_dist < np.mean(obs_dist)) / n_sim
     # cmp_loc = sum(scores.loc_sim > obs_loc) / n_sim
 
-    return cmp_mean, cmp_median, np.mean(obs_dist), np.median(obs_dist)
+    return {
+        "cmp_emd": cmp_emd,
+        "cmp_mean": cmp_mean,
+        "cmp_median": cmp_median,
+        "obs_emd": obs_emd,
+        "obs_mean": np.mean(obs_dist),
+        "obs_med": np.median(obs_dist),
+    }
 
 
 def get_user(mpp, uid, mark):
