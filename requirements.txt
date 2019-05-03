@@ -1,6 +1,7 @@
 -i https://pypi.org/simple
 numpy
 scipy
+sklearn
 pandas
 plotly
 geopy

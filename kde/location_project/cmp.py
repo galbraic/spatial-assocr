@@ -46,7 +46,8 @@ def get_individual_component(df, users, criteria=None, prnt=True):
         shared_locs = np.intersect1d(loc_set, tmp["location_id"].unique())
         if len(shared_locs) > 0:
             matches.append({"uid": u, "n_matches": len(shared_locs), "n_events": len(tmp)})
-    if matches is None:
+
+    if matches == []:
         print("No other visits overlap with this pattern, using population only.")
         return None, None
     matches = pd.DataFrame(matches)
