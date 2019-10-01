@@ -189,24 +189,27 @@ def calc_cmp(mpp, pop_kde_data, userA, userB=None, n_sim=10, k=1, prnt=False):
 
 def get_user(mpp, uid, mark):
     out = mpp.copy()
-    out = out.drop_duplicates(subset=["location_id", "m"])
+    # out = out.drop_duplicates(subset=["location_id", "m"])
     return out.loc[(out.uid == uid) & (out.m == mark)].reset_index(drop=True)
 
 
 def make_user_scatter_plot(mpp, uid, mark):
     user = get_user(mpp, uid, mark)
-    name = "m={}, n={}".format(mark.upper(), len(user))
+    name = "U{}, m={}, n={}".format(uid, mark.upper(), len(user))
+    # name = "U{}, m={}".format(uid, mark.upper())
     return go.Scatter(x=user.lon, y=user.lat, mode="markers", name=name, visible="legendonly")
 
 
-def plot_scatter(df, mpp, uid):
-    # calculate counts for heatmap
-    data = df.copy()
-    data["lat_r"] = data.lat.round(3)
-    data["lon_r"] = data.lon.round(3)
-    freqs = data.groupby(["lat_r", "lon_r"]).count().reset_index()[["lat_r", "lon_r", "event_id"]]
-    freqs.columns = ["lat_r", "lon_r", "freq"]
-    p_freqs = freqs.pivot_table(columns="lon_r", index="lat_r", values="freq", fill_value=0)
+def plot_scatter(df, mpp, uid=None, uidB=None, p_freqs=None):
+    if p_freqs is None:  # calculate counts for heatmap
+        data = df.copy()
+        data["lat_r"] = data.lat.round(3)
+        data["lon_r"] = data.lon.round(3)
+        freqs = (
+            data.groupby(["lat_r", "lon_r"]).count().reset_index()[["lat_r", "lon_r", "event_id"]]
+        )
+        freqs.columns = ["lat_r", "lon_r", "freq"]
+        p_freqs = freqs.pivot_table(columns="lon_r", index="lat_r", values="freq", fill_value=0)
 
     # make the heatmap
     heat = go.Heatmap(
@@ -226,9 +229,20 @@ def plot_scatter(df, mpp, uid):
     )
 
     traces = [heat]
-    traces += [make_user_scatter_plot(mpp, uid, mark) for mark in ["a", "b"]]
+    if uid:
+        traces += [make_user_scatter_plot(mpp, uid, mark) for mark in ["a", "b"]]
+        if uidB:
+            traces += [make_user_scatter_plot(mpp, uidB, mark) for mark in ["a", "b"]]
+            layout = go.Layout(
+                title="Users {{{}, {}}}".format(uid, uidB), legend=dict(x=-0.35, y=1)
+            )
+        else:
+            layout = go.Layout(title="User {}".format(uid), legend=dict(x=-0.35, y=1))
+    else:  # loop over all users in mpp
+        for uid in mpp["uid"].unique():
+            traces += [make_user_scatter_plot(mpp, uid, mark) for mark in ["a", "b"]]
+        layout = go.Layout(title="All Users", legend=dict(x=-0.35, y=1))
 
-    layout = go.Layout(title="User {}".format(uid), legend=dict(x=-0.35, y=1))
     fig = go.Figure(data=traces, layout=layout)
 
     iplot(fig, show_link=False)
