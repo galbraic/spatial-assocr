@@ -7,7 +7,9 @@ from scipy.spatial.distance import cdist
 from c_emd import _emd
 
 
-def emd(X, Y, X_weights=None, Y_weights=None, distance="euclidean", D=None, return_flows=False):
+def emd(
+    X=None, Y=None, X_weights=None, Y_weights=None, distance="euclidean", D=None, return_flows=False
+):
     """
     Computes the EMD between two weighted samples
     @param X : First sample
@@ -53,6 +55,9 @@ def emd(X, Y, X_weights=None, Y_weights=None, distance="euclidean", D=None, retu
             raise ValueError("Y_weights has to sum to 1.")
 
     if distance != "precomputed":
+        if X is None or Y is None:
+            raise ValueError("X and Y must be non-null")
+
         n = len(X)
         m = len(Y)
         D = cdist(X, Y, distance)
