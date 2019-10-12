@@ -17,9 +17,9 @@ def population_scores(mpp):
     users = sorted(mpp["uid"].unique())
     rslt = []
 
-    for user_A in users[:5]:
+    for user_A in users:
         print(f"USER {user_A}")
-        for user_B in users[:5]:
+        for user_B in users:
             tmp = {}
             try:
                 # get the data for the pair in question
