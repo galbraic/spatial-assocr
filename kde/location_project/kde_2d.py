@@ -18,8 +18,78 @@ KM_TO_LON = 0.010615
 KM_TO_LAT = 0.008989
 
 
+class KDE(object):
+    def __init__(self, data):
+        """
+         INPUT:
+        -------
+            1. data: The observed/train events.
+                     The data is in the format of
+                     np.array([[lon, lat, bandwidth, weight], ... ])
+                     where each line is a different point.
+        """
+        self.data = data
+
+    def log_pdf(self, query_point):
+        """
+         INPUT:
+        -------
+            :param query_point: single point np.array([[lon, lat]])
+
+         OUTPUT:
+        --------
+            1. log_pdf: <float> the log pdf value
+        """
+        x_dist = query_point[0] - self.data[:, 0]
+        y_dist = query_point[1] - self.data[:, 1]
+        log_pdf_x = norm.logpdf(x_dist, loc=0, scale=self.data[:, 2] * KM_TO_LON)
+        log_pdf_y = norm.logpdf(y_dist, loc=0, scale=self.data[:, 2] * KM_TO_LAT)
+        return logsumexp(log_pdf_x + log_pdf_y) - np.log(self.data.shape[0])
+
+    def log_lik(self, query_points):
+        """
+         INPUT:
+        -------
+            :param query_points: array of points np.array([[lon, lat]], ...)
+
+         OUTPUT:
+        --------
+            1. log_pdf: <float> the log likelihood value
+        """
+        return sum(np.apply_along_axis(self.log_pdf, 1, query_points))
+
+
+class MixtureKDE(object):
+    def __init__(self, indiv, pop, alpha=0.80):
+        """
+         INPUT:
+        -------
+            1. indiv: The observed/train events for the local component
+                     The data is in the format of
+                     np.array([[lon, lat, bandwidth, weight], ... ])
+                     where each line is a different point.
+            2. population: The observed/train events for the population component
+                     The data is in the format of
+                     np.array([[lon, lat, bandwidth, weight], ... ])
+                     where each line is a different point.
+            3. alpha: (default=0.80) The mixing weight for the individual.
+                     The population will get 1-alpha
+        """
+        self.indiv = KDE(indiv)
+        self.pop = KDE(pop)
+        self.alpha = alpha
+
+    def log_pdf(self, query_point):
+        indiv_log_pdf = np.log(self.alpha) + self.indiv.log_pdf(query_point)
+        pop_log_pdf = np.log(1 - self.alpha) + self.pop.log_pdf(query_point)
+        return np.logaddexp(indiv_log_pdf, pop_log_pdf)
+
+    def log_lik(self, query_points):
+        return sum(np.apply_along_axis(self.log_pdf, 1, query_points))
+
+
 def learn_nearest_neighbors_bandwidth(
-    sample_points, k=5, lon_to_km=KM_TO_LON, lat_to_km=KM_TO_LAT, min_bw=0.01
+    sample_points, k=5, lon_to_km=KM_TO_LON, lat_to_km=KM_TO_LAT, min_bw=0.05
 ):
     """
      INPUT:
@@ -34,6 +104,9 @@ def learn_nearest_neighbors_bandwidth(
     --------
         :return: np.array of bandwidths
     """
+    if sample_points.shape[0] == 1:
+        return np.array(1.0)
+
     k = np.min([k, sample_points.shape[0] - 1])
 
     bandwidths = []
@@ -53,32 +126,12 @@ def learn_nearest_neighbors_bandwidth(
         (neighbors_dists, neighbors_indexes) = tree.query(dists[i, :], k + 1)
 
         if neighbors_dists[-1] <= min_bw:
-            bandwidths.append(min_bw)  # bandwidth can't be less than 1 meter
+            bandwidths.append(min_bw)
         else:
             bandwidths.append(neighbors_dists[-1])
 
     # print("Done training bandwidths")
     return np.array(bandwidths)
-
-
-def log_pdf(query_point, kde_data):
-    """
-     INPUT:
-    -------
-        :param query_point:
-        :param kde_data:
-
-     OUTPUT:
-    --------
-        1. log_pdf: <float> The log pdf value
-    """
-
-    x_dist = query_point[0] - kde_data[:, 0]
-    y_dist = query_point[1] - kde_data[:, 1]
-    log_pdf_x = norm.logpdf(x_dist, loc=0, scale=kde_data[:, 2] * KM_TO_LON)
-    log_pdf_y = norm.logpdf(y_dist, loc=0, scale=kde_data[:, 2] * KM_TO_LAT)
-
-    return logsumexp(log_pdf_x + log_pdf_y)  # - np.log( kde_data.shape[0] )
 
 
 def kdnearest(a, b, leafsize=10, k=1):
@@ -156,7 +209,7 @@ def make_user_scatter_plot(user_data, mark):
     )
 
 
-def plot_kde(data, user_data=None, uid=None):
+def plot_kde(kde, user_data=None, uid=None):
     """
     Compute log pdf values over grid
 
@@ -168,7 +221,7 @@ def plot_kde(data, user_data=None, uid=None):
     y = np.arange(33.4, 34, delta)  # latitude
     X, Y = np.meshgrid(x, y)
     pts = np.vstack([X.ravel(), Y.ravel()]).T
-    z = np.apply_along_axis(log_pdf, 1, pts, kde_data=data)
+    z = np.apply_along_axis(kde.log_pdf, 1, pts)
     out = pd.DataFrame({"lon": pts[:, 0], "lat": pts[:, 1], "lpdf": z})
 
     # plot the heatmap
@@ -200,3 +253,12 @@ def plot_kde(data, user_data=None, uid=None):
 
     fig = go.Figure(data=traces, layout=layout)
     iplot(fig, show_link=False)
+
+
+def create_individual_component_data(df):
+    points = df[["lon", "lat"]].values
+    bw = learn_nearest_neighbors_bandwidth(points, k=5, min_bw=0.01)
+    indiv_kde = np.hstack([points, np.atleast_2d(bw).T])
+    indiv_kde_data = np.append(indiv_kde, np.ones((len(indiv_kde), 1)), 1)
+
+    return indiv_kde_data
