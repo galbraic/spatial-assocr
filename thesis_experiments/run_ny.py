@@ -64,8 +64,8 @@ def compute_weight_step(n_a):
     return alpha
 
 
-def compute_weight_func(n_a):
-    return (1 + np.exp(-0.02 * n_a)) ** -1 - 0.45 * n_a ** (-1 / 2)
+def weight_func(n_a):
+    return (1 + np.exp(-0.02 * n_a)) ** -1 - 0.35 * n_a ** (-1 / 2) - 0.1
 
 
 def main():
