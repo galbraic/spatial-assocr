@@ -47,9 +47,7 @@ def calculate_lr(mpp, pop_kde_data, uA, uB, alpha=0.80):
     return i_kde.log_lik(eval_points) - pop_kde.log_lik(eval_points)
 
 
-def compute_weight_step(uA, mpp):
-    n_a = len(mpp.loc[(mpp.uid == uA) & (mpp.m == "a"),])
-
+def compute_weight_step(n_a):
     if n_a <= 5:
         alpha = 0.05
     elif n_a > 5 and n_a <= 10:
@@ -102,17 +100,22 @@ def main():
         tmp_slr = {"a": row["a"], "b": row["b"]}
         tmp_cmp = {"a": row["a"], "b": row["b"]}
         tmp_lr = {"a": row["a"], "b": row["b"]}
+
+        # score-based methods
         for s in scores:
             tmp_slr[s] = calc_slr(score_vals, row["a"], row["b"], s)
             tmp_cmp[s] = calc_cmp(score_vals, row["a"], row["b"], s)
+
+        # LR with different weighting schemes
         tmp_lr["lr_alpha_80"] = calculate_lr(mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=0.8)
 
-        tmp_lr["alpha_step"] = compute_weight_step(row["a"], mpp)
+        n_a = len(mpp.loc[(mpp.uid == row["a"]) & (mpp.m == "a"),])
+        tmp_lr["alpha_step"] = compute_weight_step(n_a)
         tmp_lr["lr_alpha_step"] = calculate_lr(
             mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=tmp_lr["alpha_step"]
         )
 
-        tmp_lr["alpha_func"] = compute_weight_func(row["a"], mpp)
+        tmp_lr["alpha_func"] = compute_weight_func(n_a)
         tmp_lr["lr_alpha_func"] = calculate_lr(
             mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=tmp_lr["alpha_step"]
         )
