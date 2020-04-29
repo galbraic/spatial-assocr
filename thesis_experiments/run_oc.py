@@ -72,7 +72,7 @@ def main():
     np.random.seed(1234)
 
     # read in necessary data
-    directory = os.path.join("..", "data", "DFRWS_USA", "oc")
+    directory = os.path.join("..", "data", "oc")
     mpp = pd.read_csv(os.path.join(directory, "mpp_visits_month0a_month1b_n1.csv"))
     pop_kde_data = np.load(os.path.join(directory, "population_visits_kde_data.npy"))
     score_vals = pd.read_csv(os.path.join(directory, "score_func_vals.csv"))
