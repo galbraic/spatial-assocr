@@ -47,7 +47,7 @@ def calculate_lr(mpp, pop_kde_data, uA, uB, alpha=0.80):
     return i_kde.log_lik(eval_points) - pop_kde.log_lik(eval_points)
 
 
-def compute_weight(uA, mpp):
+def compute_weight_step(uA, mpp):
     n_a = len(mpp.loc[(mpp.uid == uA) & (mpp.m == "a"),])
 
     if n_a <= 5:
@@ -64,6 +64,10 @@ def compute_weight(uA, mpp):
         alpha = 0.85
 
     return alpha
+
+
+def compute_weight_func(n_a):
+    return (1 + np.exp(-0.02 * n_a)) ** -1 - 0.45 * n_a ** (-1 / 2)
 
 
 def main():
@@ -102,11 +106,13 @@ def main():
             tmp_slr[s] = calc_slr(score_vals, row["a"], row["b"], s)
             tmp_cmp[s] = calc_cmp(score_vals, row["a"], row["b"], s)
         tmp_lr["lr_alpha_80"] = calculate_lr(mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=0.8)
-        tmp_lr["alpha_step"] = compute_weight(row["a"], mpp)
+
+        tmp_lr["alpha_step"] = compute_weight_step(row["a"], mpp)
         tmp_lr["lr_alpha_step"] = calculate_lr(
             mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=tmp_lr["alpha_step"]
         )
-        tmp_lr["alpha_func"] = compute_weight(row["a"], mpp)
+
+        tmp_lr["alpha_func"] = compute_weight_func(row["a"], mpp)
         tmp_lr["lr_alpha_func"] = calculate_lr(
             mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=tmp_lr["alpha_step"]
         )
