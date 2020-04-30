@@ -73,7 +73,7 @@ def main():
 
     # read in necessary data
     directory = os.path.join("..", "data", "gowalla")
-    mpp = pd.read_csv(os.path.join(directory, "mpp_octA_septbB.csv"))
+    mpp = pd.read_csv(os.path.join(directory, "mpp_octA_septB.csv"))
     pop_kde_data = np.load(os.path.join(directory, "population_visits_kde_data.npy"))
     score_vals = pd.read_csv(os.path.join(directory, "score_func_vals.csv"))
     score_vals.sort_values(["a", "b"], inplace=True)
