@@ -117,7 +117,7 @@ def main():
 
         tmp_lr["alpha_func"] = compute_weight_func(n_a)
         tmp_lr["lr_alpha_func"] = calculate_lr(
-            mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=tmp_lr["alpha_step"]
+            mpp, pop_kde_data, uA=row["a"], uB=row["b"], alpha=tmp_lr["alpha_func"]
         )
 
         slr.append(tmp_slr)
