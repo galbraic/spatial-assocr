@@ -13,17 +13,17 @@ from scipy.stats import norm
 MIN_PARENT = 5
 TOL = 0.0001
 
-# Might need adjusting for different areas - this one is for SoCal
-KM_TO_LON = 0.010615
-KM_TO_LAT = 0.008989
+# # Might need adjusting for different areas - this one is for SoCal
+# KM_TO_LON = 0.010615
+# KM_TO_LAT = 0.008989
 
 # # this one is for Lusanne, Switzerland
 # KM_TO_LON = 0.01306
 # KM_TO_LAT = 0.009016
 
-# # this one is for NY
-# KM_TO_LON = 0.011856
-# KM_TO_LAT = 0.009043
+# this one is for NY
+KM_TO_LON = 0.011856
+KM_TO_LAT = 0.009043
 
 
 class KDE(object):
