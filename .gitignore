@@ -1,6 +1,7 @@
 data/*
 kde/data/*
 notebooks/cache/*
+DFRWS_EU_Experiments/*
 Pipfile.lock
 spatial_assocr.egg-info/
 .DS_Store
